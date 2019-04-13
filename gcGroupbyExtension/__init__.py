@@ -69,7 +69,6 @@ class GroupByPipedTransforms(object):
             pos = idx
         else:
             raise ValueError("An error occured when retrieving the index.")
-        print("position detected:", pos, f"({axis})")
         return pos
 
     def _execute(self, df, index=0, column=None, operation="subtract"):
