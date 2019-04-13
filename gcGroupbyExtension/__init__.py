@@ -165,7 +165,7 @@ class GroupByPipedTransforms(object):
         concatenated = self.concat(
             multiIndex="join" if addMultiIndexWithSep else False, 
             sep=addMultiIndexWithSep, 
-            clearPipeline,
+            clearPipeline=clearPipeline,
             **kwargs)
         dict_toExport = concatenated.to_dict(orient="records")
         if rowIndicesFieldName:
