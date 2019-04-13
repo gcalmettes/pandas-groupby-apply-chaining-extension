@@ -161,10 +161,11 @@ class GroupByPipedTransforms(object):
         self.pipe(self._resetIndex)
         return self
     
-    def toJSON(self, fileName, rowIndicesFieldName='idx_', addMultiIndexWithSep='|', **kwargs):
+    def toJSON(self, fileName, rowIndicesFieldName='idx_', addMultiIndexWithSep='|', clearPipeline=True, **kwargs):
         concatenated = self.concat(
             multiIndex="join" if addMultiIndexWithSep else False, 
             sep=addMultiIndexWithSep, 
+            clearPipeline,
             **kwargs)
         dict_toExport = concatenated.to_dict(orient="records")
         if rowIndicesFieldName:
