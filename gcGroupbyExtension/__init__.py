@@ -105,14 +105,30 @@ class GroupByPipedTransforms(object):
         self._pipedFunctions.extend(functions)
         return self
     
-    def concat(self, addGroupName=True, **kwargs):
+    def concat(self, multiIndex='hierarchy', sep='|', **kwargs):
         axis = kwargs.pop('axis', 1)
         self._validatePipelineObject(self._obj)
         concatenated = pd.concat(map(lambda x: self.pipeline(x[1]), self._obj), axis=axis, **kwargs)
-        if axis == 1 and addGroupName:
-            newNames = map(lambda x: map(lambda y: f"{y}|{x[0]}", x[1].columns), self._obj)
+        if axis == 1 and multiIndex == 'join':
+            # create flat index and join group name at end of each column with separator in between
+            newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].columns), self._obj)
             newNames = [name for subset in newNames for name in subset]
             concatenated.columns = newNames
+        if axis == 1 and multiIndex == 'hierarchy':
+            # create multi index hierarchy for the columns
+            newNames = map(lambda x: map(lambda y: (x[0],y), x[1].columns), self._obj)
+            newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
+            concatenated.columns = newNames
+        if axis == 0 and multiIndex == 'join':
+            # create flat index and join group name at end of each column with separator in between
+            newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].index), self._obj)
+            newNames = [name for subset in newNames for name in subset]
+            concatenated.index = newNames
+        if axis == 0 and multiIndex == 'hierarchy':
+            # create multi index hierarchy for the index
+            newNames = map(lambda x: map(lambda y: (x[0],y), x[1].index), self._obj)
+            newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
+            concatenated.index = newNames
         self._pipedFunctions = [] # clear piped functions
         return concatenated
     
@@ -140,15 +156,17 @@ class GroupByPipedTransforms(object):
         self.pipe(self._resetIndex)
         return self
     
-    def toJSON(self, fileName, addIndex=True, indexName=None, **kwargs):
-        concatenated = self.concat(**kwargs)
+    def toJSON(self, fileName, rowIndicesFieldName='idx_', addMultiIndexWithSep='|', **kwargs):
+        concatenated = self.concat(
+            multiIndex="join" if addMultiIndexWithSep else False, 
+            sep=addMultiIndexWithSep, 
+            **kwargs)
         dict_toExport = concatenated.to_dict(orient="records")
-        if addIndex:
+        if rowIndicesFieldName:
             isIndexTimeType = np.issubdtype(concatenated.index, np.datetime64)
-            idxName = "idx_" if not indexName else indexName
             for i,index in enumerate(concatenated.index):
                 idx = index if not isIndexTimeType else index.isoformat()
-                dict_toExport[i][idxName] = idx
+                dict_toExport[i][rowIndicesFieldName] = f"{idx}"
         with open(fileName, "w") as f:
             f.write(f'{{"data": {json.dumps(dict_toExport)}}}')
 
