@@ -71,6 +71,10 @@ class GroupByPipedTransforms(object):
             raise ValueError("An error occured when retrieving the index.")
         return pos
 
+    def _cleanPipeline(self):
+        self._pipedFunctions = []
+        return self
+
     def _execute(self, df, index=0, column=None, operation="subtract"):
         '''Apply a DataFrame-wise operation using the provided row (index) or column'''
         numericCols = df.select_dtypes(include=[np.number]).columns
@@ -129,7 +133,7 @@ class GroupByPipedTransforms(object):
             newNames = map(lambda x: map(lambda y: (x[0],y), x[1].index), self._obj)
             newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
             concatenated.index = newNames
-        self._pipedFunctions = [] # clear piped functions
+        self._cleanPipeline()
         return concatenated
     
     def resetStartingValues(self):
