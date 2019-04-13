@@ -74,7 +74,7 @@ class GroupByPipedTransforms(object):
     def _clearPipeline(self):
         self._pipedFunctions = []
         return self
-
+                            
     def _execute(self, df, index=0, column=None, operation="subtract"):
         '''Apply a DataFrame-wise operation using the provided row (index) or column'''
         numericCols = df.select_dtypes(include=[np.number]).columns
@@ -104,15 +104,55 @@ class GroupByPipedTransforms(object):
             self._obj = self._obj.groupby(grouper, **args)
         return self
     
-    def pipe(self, *functions):
-        '''Add function(s) to the pipeline'''
-        self._pipedFunctions.extend(functions)
+    def pipe(self, *functions, ignoreGroups=None, onlyGroups=None):
+        '''Add function(s) to the pipeline.
+           The functions can be limited to certains groups by providing the name of the groups
+           to the ignoreGroups or onlyGroups optional arguments.
+        '''
+        # onlyGroups takes precedence if both only/ignore
+        if onlyGroups:
+            funcs = [lambda x,f=fn: (x[0], f(x[1])) if x[0] in onlyGroups else (x[0], x[1]) for fn in functions]
+        elif ignoreGroups:
+            funcs = [lambda x,f=fn: (x[0], f(x[1])) if x[0] not in ignoreGroups else (x[0], x[1]) for fn in functions]
+        else:
+            # see https://docs.python.org/3/faq/programming.html#why-do-lambdas-defined-in-a-loop-with-different-values-all-return-the-same-result
+            funcs = [lambda x,f=fn: (x[0], f(x[1])) for fn in functions]
+        self._pipedFunctions.extend(funcs)
         return self
     
+    def resetStartingValues(self, ignoreGroups=None, onlyGroups=None):
+        self.pipe(lambda x: self._execute(x, index=0, operation="subtract"),
+                  ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
+        return self
+
+    def subtract(self, index=0, column=None, ignoreGroups=None, onlyGroups=None):
+        self.pipe(lambda x: self._execute(x, index, column, operation="subtract"),
+                  ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
+        return self
+
+    def add(self, index=0, column=None, ignoreGroups=None, onlyGroups=None):
+        self.pipe(lambda x: self._execute(x, index, column, operation="add"),
+                  ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
+        return self
+
+    def multiply(self, index=0, column=None, ignoreGroups=None, onlyGroups=None):
+        self.pipe(lambda x: self._execute(x, index, column, operation="multiply"),
+                  ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
+        return self
+
+    def divide(self, index=0, column=None, ignoreGroups=None, onlyGroups=None):
+        self.pipe(lambda x: self._execute(x, index, column, operation="divide"),
+                  ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
+        return self
+    
+    def resetIndex(self, handleFuture=True, ignoreGroups=None, onlyGroups=None):
+        self.pipe(self._resetIndex, ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
+        return self
+                            
     def concat(self, multiIndex='hierarchy', sep='|', clearPipeline=True, **kwargs):
         axis = kwargs.pop('axis', 1)
         self._validatePipelineObject(self._obj)
-        concatenated = pd.concat(map(lambda x: self.pipeline(x[1]), self._obj), axis=axis, **kwargs)
+        concatenated = pd.concat(map(lambda x: self.pipeline(x)[1], self._obj), axis=axis, **kwargs)
         if axis == 1 and multiIndex == 'join':
             # create flat index and join group name at end of each column with separator in between
             newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].columns), self._obj)
@@ -134,32 +174,8 @@ class GroupByPipedTransforms(object):
             newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
             concatenated.index = newNames
         if clearPipeline:
-            self._clearPipeline()
+            self._clearPipeline() # clear piped functions
         return concatenated
-    
-    def resetStartingValues(self):
-        self.pipe(lambda x: self._execute(x, index=0, operation="subtract"))
-        return self
-
-    def subtract(self, index=0, column=None):
-        self.pipe(lambda x: self._execute(x, index, column, operation="subtract"))
-        return self
-
-    def add(self, index=0, column=None):
-        self.pipe(lambda x: self._execute(x, index, column, operation="add"))
-        return self
-
-    def multiply(self, index=0, column=None):
-        self.pipe(lambda x: self._execute(x, index, column, operation="multiply"))
-        return self
-
-    def divide(self, index=0, column=None):
-        self.pipe(lambda x: self._execute(x, index, column, operation="divide"))
-        return self
-    
-    def resetIndex(self, handleFuture=True):
-        self.pipe(self._resetIndex)
-        return self
     
     def toJSON(self, fileName, rowIndicesFieldName='idx_', addMultiIndexWithSep='|', clearPipeline=True, **kwargs):
         concatenated = self.concat(
@@ -178,9 +194,9 @@ class GroupByPipedTransforms(object):
 
     @property
     def pipeline(self):
-      return self._pipe(*self._pipedFunctions)
+        return self._pipe(*self._pipedFunctions)
 
     @property
     def transformedGroups(self):
-      return list(map(lambda x: (x[0], self.pipeline(x[1])), self._obj))
+        return list(map(lambda x: (x[0], self.pipeline(x)[1]), self._obj))
                                     
