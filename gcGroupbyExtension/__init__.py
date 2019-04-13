@@ -71,7 +71,7 @@ class GroupByPipedTransforms(object):
             raise ValueError("An error occured when retrieving the index.")
         return pos
 
-    def _cleanPipeline(self):
+    def _clearPipeline(self):
         self._pipedFunctions = []
         return self
 
@@ -109,7 +109,7 @@ class GroupByPipedTransforms(object):
         self._pipedFunctions.extend(functions)
         return self
     
-    def concat(self, multiIndex='hierarchy', sep='|', **kwargs):
+    def concat(self, multiIndex='hierarchy', sep='|', clearPipeline=True, **kwargs):
         axis = kwargs.pop('axis', 1)
         self._validatePipelineObject(self._obj)
         concatenated = pd.concat(map(lambda x: self.pipeline(x[1]), self._obj), axis=axis, **kwargs)
@@ -133,7 +133,8 @@ class GroupByPipedTransforms(object):
             newNames = map(lambda x: map(lambda y: (x[0],y), x[1].index), self._obj)
             newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
             concatenated.index = newNames
-        self._cleanPipeline()
+        if clearPipeline:
+            self._clearPipeline()
         return concatenated
     
     def resetStartingValues(self):
