@@ -103,6 +103,9 @@ class GroupByChainedApply(object):
         if not isinstance(self._obj, (pd.core.groupby.generic.DataFrameGroupBy, pd.core.groupby.generic.SeriesGroupBy)):
             self._obj = self._obj.groupby(grouper, **args)
         return self
+
+    def getGroupLabel(self, idx):
+      return list(map(lambda x: x[0], self._obj))[idx]
     
     def apply(self, *functions, ignoreGroups=None, onlyGroups=None):
         '''Add function(s) to the pipeline.
