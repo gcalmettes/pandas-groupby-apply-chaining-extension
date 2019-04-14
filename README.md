@@ -6,7 +6,7 @@ The extension is available on [PyPi](https://pypi.org/project/gcGroupbyExtension
 pip install gcGroupbyExtension-gcalmettes
 ```
 
-Or download this repo and place the `gcGroupbyExtension` folder in the folder you're running your python script/notebook
+(Or if you do not want to install the package in your python distribution, just download this repo and place the `gcGroupbyExtension` folder in the folder you're running your python script/notebook in.)
 
 ## What problem does this extension try to solve?
 [Pandas](https://pandas.pydata.org) provides both the [`.pipe`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.core.groupby.GroupBy.pipe.html) and [`.apply`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.core.groupby.GroupBy.apply.html) methods to work on its [groupby](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.groupby.html) object.
