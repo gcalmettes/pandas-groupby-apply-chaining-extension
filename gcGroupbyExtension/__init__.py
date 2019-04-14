@@ -71,6 +71,23 @@ class GroupByChainedApply(object):
             raise ValueError("An error occured when retrieving the index.")
         return pos
 
+    @staticmethod
+    def _generateIndexNames(groupbyObject, axis='columns', multiIndex='hierarchy', sep='|'):
+        axisNameDict = {0: 'index', 1: 'columns'}
+        axis = axis if axis and not isinstance(axis, int)\
+               else axisNameDict.get(axis) if axisNameDict.get(axis)\
+               else 'columns'
+        if multiIndex:
+            if multiIndex == 'join':
+                # create flat index and join group name at end of each column with separator in between
+                newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", getattr(x[1], axis, [0])), groupbyObject)
+                newNames = [name for subset in newNames for name in subset]
+            elif multiIndex == 'hierarchy':
+                # create multi index hierarchy for the columns
+                newNames = map(lambda x: map(lambda y: (x[0],y), getattr(x[1], axis, [0])), groupbyObject)
+                newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset]) 
+        return newNames
+
     def _clearPipeline(self):
         self._pipedFunctions = []
         return self
@@ -155,43 +172,18 @@ class GroupByChainedApply(object):
     def concat(self, multiIndex='hierarchy', sep='|', clearPipeline=True, **kwargs):
         axis = kwargs.pop('axis', 1)
         self._validatePipelineObject(self._obj)
-        concatenated = pd.concat(map(lambda x: self.pipeline(x)[1], self._obj), axis=axis, **kwargs)
-        if multiIndex and axis == 1:
-            if multiIndex == 'join':
-                # create flat index and join group name at end of each column with separator in between
-                newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].columns), self._obj)
-                newNames = [name for subset in newNames for name in subset]
-            elif multiIndex == 'hierarchy':
-                # create multi index hierarchy for the columns
-                newNames = map(lambda x: map(lambda y: (x[0],y), x[1].columns), self._obj)
-                newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
-            try:
-                concatenated.columns = newNames
-            except:
-                # if one of the transformation changes the shape of the data (e.g.: mean over an axis)
-                # the renaming might break. Try to circumvent this and if fails again, give up.
-                try:
-                    newNames = map(lambda x: x[0], self._obj)
-                    concatenated.columns = newNames
-                except:
-                    pass 
-        elif multiIndex and axis == 0:
-            if multiIndex == 'join':
-                # create flat index and join group name at end of each column with separator in between
-                newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].index), self._obj)
-                newNames = [name for subset in newNames for name in subset]
-            if multiIndex == 'hierarchy':
-                # create multi index hierarchy for the index
-                newNames = map(lambda x: map(lambda y: (x[0],y), x[1].index), self._obj)
-                newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
-            try:
+        transformedGroups = self.transformedGroups
+        concatenated = pd.concat(map(lambda x: x[1], transformedGroups), axis=axis, **kwargs)
+        newNames = self._generateIndexNames(transformedGroups, axis, multiIndex, sep)
+        try:
+            if axis in [0, 'index']:
                 concatenated.index = newNames
-            except:
-                try:
-                    newNames = map(lambda x: x[0], self._obj)
-                    concatenated.index = newNames
-                except:
-                    pass 
+            elif axis in [1, 'columns']:
+                concatenated.columns = newNames
+            else:
+                raise ValueError("The axis provided is not of [0 | index | 1 | columns].")
+        except:
+            pass 
         if clearPipeline:
             self._clearPipeline() # clear piped functions
         return concatenated
