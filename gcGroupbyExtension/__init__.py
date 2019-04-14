@@ -85,7 +85,11 @@ class GroupByChainedApply(object):
             elif multiIndex == 'hierarchy':
                 # create multi index hierarchy for the columns
                 newNames = map(lambda x: map(lambda y: (x[0],y), getattr(x[1], axis, [0])), groupbyObject)
-                newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset]) 
+                newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
+            else:
+                raise ValueError("The provided multiIndex argument is not of 'hierarchy' | 'join' ") 
+        else:
+            newNames = map(lambda x: map(getattr(x[1], axis, [0])), groupbyObject)
         return newNames
 
     def _clearPipeline(self):
