@@ -153,26 +153,42 @@ class GroupByPipedTransforms(object):
         axis = kwargs.pop('axis', 1)
         self._validatePipelineObject(self._obj)
         concatenated = pd.concat(map(lambda x: self.pipeline(x)[1], self._obj), axis=axis, **kwargs)
-        if axis == 1 and multiIndex == 'join':
-            # create flat index and join group name at end of each column with separator in between
-            newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].columns), self._obj)
-            newNames = [name for subset in newNames for name in subset]
-            concatenated.columns = newNames
-        if axis == 1 and multiIndex == 'hierarchy':
-            # create multi index hierarchy for the columns
-            newNames = map(lambda x: map(lambda y: (x[0],y), x[1].columns), self._obj)
-            newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
-            concatenated.columns = newNames
-        if axis == 0 and multiIndex == 'join':
-            # create flat index and join group name at end of each column with separator in between
-            newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].index), self._obj)
-            newNames = [name for subset in newNames for name in subset]
-            concatenated.index = newNames
-        if axis == 0 and multiIndex == 'hierarchy':
-            # create multi index hierarchy for the index
-            newNames = map(lambda x: map(lambda y: (x[0],y), x[1].index), self._obj)
-            newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
-            concatenated.index = newNames
+        if multiIndex and axis == 1:
+            if multiIndex == 'join':
+                # create flat index and join group name at end of each column with separator in between
+                newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].columns), self._obj)
+                newNames = [name for subset in newNames for name in subset]
+            elif multiIndex == 'hierarchy':
+                # create multi index hierarchy for the columns
+                newNames = map(lambda x: map(lambda y: (x[0],y), x[1].columns), self._obj)
+                newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
+            try:
+                concatenated.columns = newNames
+            except:
+                # if one of the transformation changes the shape of the data (e.g.: mean over an axis)
+                # the renaming might break. Try to circumvent this and if fails again, give up.
+                try:
+                    newNames = map(lambda x: x[0], self._obj)
+                    concatenated.columns = newNames
+                except:
+                    pass 
+        elif multiIndex and axis == 0:
+            if multiIndex == 'join':
+                # create flat index and join group name at end of each column with separator in between
+                newNames = map(lambda x: map(lambda y: f"{y}{sep}{x[0]}", x[1].index), self._obj)
+                newNames = [name for subset in newNames for name in subset]
+            if multiIndex == 'hierarchy':
+                # create multi index hierarchy for the index
+                newNames = map(lambda x: map(lambda y: (x[0],y), x[1].index), self._obj)
+                newNames = pd.MultiIndex.from_tuples([name for subset in newNames for name in subset])
+            try:
+                concatenated.index = newNames
+            except:
+                try:
+                    newNames = map(lambda x: x[0], self._obj)
+                    concatenated.index = newNames
+                except:
+                    pass 
         if clearPipeline:
             self._clearPipeline() # clear piped functions
         return concatenated
@@ -195,6 +211,10 @@ class GroupByPipedTransforms(object):
     @property
     def pipeline(self):
         return self._pipe(*self._pipedFunctions)
+
+    @property
+    def groups(self):
+        return list(map(lambda x: (x[0], x[1]), self._obj))
 
     @property
     def transformedGroups(self):
