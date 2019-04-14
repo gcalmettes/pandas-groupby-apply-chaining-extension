@@ -121,7 +121,7 @@ class GroupByChainedApply(object):
             self._obj = self._obj.groupby(grouper, **args)
         return self
 
-    def getGroupLabel(self, idx):
+    def getLabelForGroup(self, idx):
       return list(map(lambda x: x[0], self._obj))[idx]
     
     def apply(self, *functions, ignoreGroups=None, onlyGroups=None):
