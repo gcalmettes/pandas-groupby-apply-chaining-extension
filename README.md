@@ -1,4 +1,12 @@
-# Chain `.apply` methods on Pandas groupby object
+# `gcGroupbyExtension`: chain `.apply` methods on Pandas groupby object
+
+## Install
+The extension is available on [PyPi](https://pypi.org/project/gcGroupbyExtension-gcalmettes/)
+```
+pip install gcGroupbyExtension-gcalmettes
+```
+
+Or download this repo and place the `gcGroupbyExtension` folder in the folder you're running your python script/notebook
 
 ## What problem does this extension try to solve?
 [Pandas](https://pandas.pydata.org) provides both the [`.pipe`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.core.groupby.GroupBy.pipe.html) and [`.apply`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.core.groupby.GroupBy.apply.html) methods to work on its [groupby](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.groupby.html) object.
