@@ -8,7 +8,13 @@ pip install gcGroupbyExtension-gcalmettes
 
 (Or if you do not want to install the package in your python distribution, just download this repo and place the `gcGroupbyExtension` folder in the folder you're running your python script/notebook in.)
 
-## What problem does this extension try to solve?
+## Import
+Once installed, the extension can be imported via:
+```
+import gcGroupbyExtension
+```
+
+## What problems does this extension try to solve?
 [Pandas](https://pandas.pydata.org) provides both the [`.pipe`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.core.groupby.GroupBy.pipe.html) and [`.apply`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.core.groupby.GroupBy.apply.html) methods to work on its [groupby](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.groupby.html) object.
 The main difference between `.pipe` and `.apply` in the groupby context is that you have access to the entire scope of the groupby object (each group) with `.pipe`, while you only have access to the subcomponents scope (in the context of a groupby the subcomponents are slices of the dataframe that called groupby where each slice is a dataframe itself. This is analogous for a series groupby.)
 1) The `.pipe` method can be chained, while the `.apply` method can't.
