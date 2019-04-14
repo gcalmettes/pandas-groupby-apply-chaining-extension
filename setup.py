@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="gcGroupbyExtension-gcalmettes",
-    version="0.0.1",
+    version="0.0.3",
     author="Guillaume Calmettes",
     author_email="gcalmettes@g.ucla.edu",
     description="Allows to construct a pipeline of functions to be applied independently on the groups of a groupby object.",
