@@ -5,7 +5,7 @@ from functools import reduce
 
 @pd.api.extensions.register_dataframe_accessor("gc")
 @pd.api.extensions.register_series_accessor("gc")
-class GroupByPipedTransforms(object):
+class GroupByChainedApply(object):
     def __init__(self, pandas_obj):
         self._validate(pandas_obj)
         self._obj = self._convertToDataFrame(pandas_obj)
@@ -104,7 +104,7 @@ class GroupByPipedTransforms(object):
             self._obj = self._obj.groupby(grouper, **args)
         return self
     
-    def pipe(self, *functions, ignoreGroups=None, onlyGroups=None):
+    def apply(self, *functions, ignoreGroups=None, onlyGroups=None):
         '''Add function(s) to the pipeline.
            The functions can be limited to certains groups by providing the name of the groups
            to the ignoreGroups or onlyGroups optional arguments.
@@ -121,32 +121,32 @@ class GroupByPipedTransforms(object):
         return self
     
     def resetStartingValues(self, ignoreGroups=None, onlyGroups=None):
-        self.pipe(lambda x: self._execute(x, index=0, operation="subtract"),
+        self.apply(lambda x: self._execute(x, index=0, operation="subtract"),
                   ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
         return self
 
     def subtract(self, index=0, column=None, ignoreGroups=None, onlyGroups=None):
-        self.pipe(lambda x: self._execute(x, index, column, operation="subtract"),
+        self.apply(lambda x: self._execute(x, index, column, operation="subtract"),
                   ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
         return self
 
     def add(self, index=0, column=None, ignoreGroups=None, onlyGroups=None):
-        self.pipe(lambda x: self._execute(x, index, column, operation="add"),
+        self.apply(lambda x: self._execute(x, index, column, operation="add"),
                   ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
         return self
 
     def multiply(self, index=0, column=None, ignoreGroups=None, onlyGroups=None):
-        self.pipe(lambda x: self._execute(x, index, column, operation="multiply"),
+        self.apply(lambda x: self._execute(x, index, column, operation="multiply"),
                   ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
         return self
 
     def divide(self, index=0, column=None, ignoreGroups=None, onlyGroups=None):
-        self.pipe(lambda x: self._execute(x, index, column, operation="divide"),
+        self.apply(lambda x: self._execute(x, index, column, operation="divide"),
                   ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
         return self
     
     def resetIndex(self, handleFuture=True, ignoreGroups=None, onlyGroups=None):
-        self.pipe(self._resetIndex, ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
+        self.apply(self._resetIndex, ignoreGroups=ignoreGroups, onlyGroups=onlyGroups)
         return self
                             
     def concat(self, multiIndex='hierarchy', sep='|', clearPipeline=True, **kwargs):
